@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Ask search engines not to list this personal app -->
+  <meta name="robots" content="noindex, nofollow">
+  <title>Health Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top bar: screen title on the left, Setup (or Back) button on the right -->
+  <header class="app-header">
+    <button id="back-button" class="header-button" aria-label="Back" hidden>← Back</button>
+    <h1 id="screen-title">Daily Log</h1>
+    <button id="setup-button" class="header-button" aria-label="Open Setup">⚙️</button>
+  </header>
+
+  <!-- Main navigation: bottom bar on phones, top tabs on larger screens -->
+  <nav class="tab-bar" aria-label="Main">
+    <button class="tab active" data-screen="today"><span class="tab-icon">📅</span><span>Daily Log</span></button>
+    <button class="tab" data-screen="history"><span class="tab-icon">🗂️</span><span>History</span></button>
+    <button class="tab" data-screen="dashboard"><span class="tab-icon">📊</span><span>Dashboard</span></button>
+  </nav>
+
+  <main>
+
+    <!-- Shown only if the browser refuses to save data (e.g. private/incognito mode) -->
+    <p id="storage-warning" class="message error" hidden>
+      ⚠️ This browser is not saving your data. Avoid private/incognito mode, and download a backup.
+    </p>
+
+    <!-- DAILY LOG: daily input for the selected date -->
+    <section id="screen-today" class="screen">
+
+      <!-- Date bar: ◀ date ▶ (tap the date to open a calendar) -->
+      <div id="date-bar" class="date-bar">
+        <button id="prev-day" class="date-arrow" type="button" aria-label="Previous day">◀</button>
+        <div class="date-display">
+          <span id="date-label" class="date-label"></span>
+          <span id="date-sub" class="date-sub"></span>
+          <input id="date-picker" type="date" aria-label="Choose a date">
+        </div>
+        <button id="next-day" class="date-arrow" type="button" aria-label="Next day">▶</button>
+      </div>
+
+      <!-- Shown only when a past date is selected -->
+      <div id="past-row" class="past-row" hidden>
+        <span>⚠️ Viewing a past day</span>
+        <button id="today-button" class="small-button" type="button">Back to today</button>
+      </div>
+
+      <!-- Shown if the calendar day changes while the app is open -->
+      <div id="new-day-banner" class="new-day-banner" hidden>
+        <span id="new-day-text"></span>
+        <button id="switch-today-button" class="button primary" type="button">Switch to today</button>
+      </div>
+
+      <div class="card">
+        <h2>💊 Supplements &amp; meds</h2>
+        <div id="today-supplements"></div>
+      </div>
+      <div class="card">
+        <h2>😴 Sleep &amp; symptoms</h2>
+        <div id="today-sleep"></div>
+      </div>
+      <div class="card">
+        <h2>🏃 Exercise</h2>
+        <div id="today-exercise"></div>
+      </div>
+      <div class="card">
+        <h2>⚡ Migraine</h2>
+        <div id="today-migraine"></div>
+      </div>
+      <div class="card">
+        <h2>💊 As-needed medications</h2>
+        <div id="today-prn"></div>
+      </div>
+    </section>
+
+    <!-- HISTORY: recorded days, newest first. Tapping a day opens it in the Daily Log. -->
+    <section id="screen-history" class="screen" hidden>
+      <p id="history-subtitle" class="screen-subtitle"></p>
+      <div id="history-list"></div>
+    </section>
+
+    <!-- DASHBOARD: compact summary of a week or month (read-only) -->
+    <section id="screen-dashboard" class="screen" hidden>
+
+      <div class="mode-switch" role="group" aria-label="Period">
+        <button type="button" data-dash-mode="week" aria-pressed="true">Week</button>
+        <button type="button" data-dash-mode="month" aria-pressed="false">Month</button>
+      </div>
+
+      <div class="date-bar dash-bar">
+        <button id="dash-prev" class="date-arrow" type="button" aria-label="Previous period">◀</button>
+        <div class="date-display">
+          <span id="dash-label" class="date-label"></span>
+          <span id="dash-sub" class="date-sub no-arrow"></span>
+        </div>
+        <button id="dash-next" class="date-arrow" type="button" aria-label="Next period">▶</button>
+      </div>
+
+      <div id="dash-overview" class="overview-grid"></div>
+      <div id="dash-prn" class="card compact-card"></div>
+
+      <div class="card compact-card">
+        <h2 id="dash-trend-title">Recent weeks</h2>
+        <table id="dash-trend" class="trend-table"></table>
+        <p class="help-text small">– = nothing recorded · N/A = no planned workouts · tap a row to view that period</p>
+      </div>
+
+      <details class="card compact-card how">
+        <summary>How these numbers are calculated</summary>
+        <ul>
+          <li><strong>Migraine days</strong> – days with at least one migraine episode (two episodes on one day count as one day). Days you marked “No migraine” are shown separately from days with nothing recorded.</li>
+          <li><strong>Planned workouts</strong> – completed planned sessions ÷ all planned sessions on your schedule for those days (using the schedule that applied then). Unplanned workouts are not part of the percentage; they are listed separately. Sessions you haven’t marked count as planned but not completed, and are shown as “not recorded” so you can see when tracking is incomplete.</li>
+          <li><strong>Hard nights</strong> – nights where falling back asleep after the longest awakening took 30–60 min, over 60 min, or you couldn’t fall back asleep. Nights with no awakenings, or a quicker return to sleep, count as fine. Nights without that answer are “no data”.</li>
+          <li><strong>Supplements &amp; meds</strong> – taken ÷ (taken + missed) for scheduled doses. Doses not marked either way are shown separately and are not counted. As-needed medications are never included.</li>
+          <li><strong>As-needed medications</strong> – every intake you logged. “Did it help?” comes from the migraine episode an intake is linked to.</li>
+          <li>Partial periods (before Oct 1, 2026 or after today) only count the days inside the range. These are simple counts and don’t show whether one thing causes another.</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- SETUP: opened from the ⚙️ button, not a main tab -->
+    <section id="screen-setup" class="screen" hidden>
+      <p class="screen-subtitle">Things you set once and change rarely</p>
+      <div class="card">
+        <div class="card-header">
+          <h2>💊 Supplements &amp; medications</h2>
+          <button id="add-supplement-button" class="small-button" type="button">+ Add</button>
+        </div>
+        <div id="supplement-list" class="item-list"></div>
+        <details id="supplement-archive" class="archive" hidden>
+          <summary>Archived (<span class="archive-count">0</span>)</summary>
+          <div id="supplement-archive-list"></div>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>🗓️ Weekly workout schedule</h2>
+          <button id="add-workout-button" class="small-button" type="button">+ Add</button>
+        </div>
+        <p id="workout-count" class="help-text"></p>
+        <div id="workout-list" class="item-list"></div>
+        <details id="workout-archive" class="archive" hidden>
+          <summary>Archived (<span class="archive-count">0</span>)</summary>
+          <div id="workout-archive-list"></div>
+        </details>
+      </div>
+      <div class="card">
+        <h2>💾 Backup</h2>
+        <p class="help-text">Your data is saved only in this browser on this device. Download a backup regularly and keep it in your private Google Drive folder.</p>
+
+        <p id="data-summary" class="data-summary"></p>
+        <p id="last-backup" class="last-backup"></p>
+
+        <div class="button-row">
+          <button id="export-button" class="button primary">⬇️ Download backup</button>
+          <button id="share-button" class="button" hidden>📤 Share backup…</button>
+          <button id="import-button" class="button">⬆️ Restore from backup</button>
+        </div>
+        <input id="import-file" type="file" accept=".json,application/json" hidden>
+        <button id="undo-restore-button" class="link-button" hidden>↩️ Undo last restore</button>
+
+        <p id="backup-message" class="message" hidden></p>
+        <p class="help-text small">Backup files contain your personal health information. Store them only in private places.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FORM: add / edit a supplement or medication (slides up from the bottom on phones) -->
+  <dialog id="supplement-dialog" class="sheet">
+    <form id="supplement-form" novalidate>
+      <h2 id="supplement-dialog-title">Add supplement or medication</h2>
+
+      <label class="field">
+        <span class="field-label">Name</span>
+        <input name="itemName" type="text" maxlength="60" autocomplete="off" autocapitalize="words" placeholder="e.g. Vitamin D">
+      </label>
+
+      <fieldset class="field">
+        <legend class="field-label">How do you take it?</legend>
+        <div id="schedule-choices" class="chips"></div>
+        <p id="prn-note" class="help-text small">As-needed medications have no schedule and are never counted as missed. You'll log them when you take them, and pick them in Migraine tracking.</p>
+      </fieldset>
+
+      <label class="field">
+        <span class="field-label"><span id="dosage-label">Dosage</span> <span class="optional">(optional)</span></span>
+        <input name="dosage" type="text" maxlength="40" autocomplete="off" placeholder="e.g. 1000 IU, 2 capsules">
+      </label>
+
+      <!-- Only for scheduled items; hidden for "As needed" -->
+      <div id="scheduled-fields">
+        <fieldset class="field">
+          <legend class="field-label">Type</legend>
+          <div id="supplement-type-choices" class="chips"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="field-label">Time(s)</legend>
+          <div id="time-list"></div>
+          <button id="add-time-button" type="button" class="link-button">+ Add another time</button>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="field-label">Days</legend>
+          <div id="frequency-choices" class="chips"></div>
+          <div id="supplement-days" class="chips days"></div>
+        </fieldset>
+
+        <label class="field">
+          <span class="field-label">Started on <span class="optional">(optional)</span></span>
+          <input name="startedOn" type="date">
+          <span class="help-text small">Choose an earlier date to fill in days before you added it.</span>
+        </label>
+      </div>
+
+      <!-- Shown when editing changes the schedule (dosage, times, days or how you take it) -->
+      <label class="field apply-from" hidden>
+        <span class="field-label">Apply this change from</span>
+        <input name="applyFrom" type="date">
+        <span class="help-text small">Days before this date keep the old schedule. Pick an earlier date to correct past days too.</span>
+      </label>
+
+      <div class="schedule-history" hidden></div>
+
+      <p class="message error form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="submit" class="button primary">Save</button>
+      </div>
+      <button id="archive-supplement-button" type="button" class="link-button danger">Archive this item</button>
+    </form>
+  </dialog>
+
+  <!-- FORM: add / edit a planned workout session -->
+  <dialog id="workout-dialog" class="sheet">
+    <form id="workout-form" novalidate>
+      <h2 id="workout-dialog-title">Add planned workout</h2>
+
+      <fieldset class="field">
+        <legend class="field-label">Workout</legend>
+        <div id="workout-type-choices" class="chips"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field-label">Day</legend>
+        <div id="workout-day-choices" class="chips days"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field-label">Time of day</legend>
+        <div id="time-of-day-choices" class="chips"></div>
+      </fieldset>
+
+      <label class="field">
+        <span class="field-label">Started on <span class="optional">(optional)</span></span>
+        <input name="startedOn" type="date">
+        <span class="help-text small">Choose an earlier date to fill in past weeks.</span>
+      </label>
+
+      <!-- Shown when editing changes the workout, day or time of day -->
+      <label class="field apply-from" hidden>
+        <span class="field-label">Apply this change from</span>
+        <input name="applyFrom" type="date">
+        <span class="help-text small">Days before this date keep the old schedule. Pick an earlier date to correct past weeks too.</span>
+      </label>
+
+      <div class="schedule-history" hidden></div>
+
+      <p class="message error form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="submit" class="button primary">Save</button>
+      </div>
+      <button id="archive-workout-button" type="button" class="link-button danger">Archive this session</button>
+    </form>
+  </dialog>
+
+  <!-- FORM: add / edit an unplanned (extra) workout for the selected date -->
+  <dialog id="extra-dialog" class="sheet">
+    <form id="extra-form" novalidate>
+      <h2 id="extra-dialog-title">Add unplanned workout</h2>
+      <p id="extra-dialog-date" class="help-text"></p>
+
+      <fieldset class="field">
+        <legend class="field-label">Workout</legend>
+        <div id="extra-type-choices" class="chips"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field-label">Time of day</legend>
+        <div id="extra-time-choices" class="chips"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field-label">Duration (minutes)</legend>
+        <div class="minutes-row">
+          <input name="minutes" type="number" inputmode="numeric" min="1" max="600" placeholder="min" aria-label="Duration in minutes">
+          <div class="choice-row" id="extra-minute-choices"></div>
+        </div>
+      </fieldset>
+
+      <label class="field">
+        <span class="field-label">Notes <span class="optional">(optional)</span></span>
+        <input name="notes" type="text" maxlength="200" autocomplete="off" placeholder="e.g. easy pace, 5 km">
+      </label>
+
+      <p class="message error form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="submit" class="button primary">Save</button>
+      </div>
+      <button id="remove-extra-button" type="button" class="link-button danger">Remove this workout</button>
+    </form>
+  </dialog>
+
+  <!-- FORM: add / edit a migraine episode -->
+  <dialog id="migraine-dialog" class="sheet">
+    <form id="migraine-form" novalidate>
+      <h2 id="migraine-dialog-title">Add migraine episode</h2>
+      <p id="migraine-dialog-date" class="help-text"></p>
+
+      <fieldset class="field">
+        <legend class="field-label">Severity <span class="optional">(1 = mild, 10 = worst)</span></legend>
+        <div id="severity-choices" class="chips severity"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field-label">Duration</legend>
+        <div id="migraine-duration-choices" class="chips"></div>
+      </fieldset>
+
+      <label class="field">
+        <span class="field-label">Approximate start time <span class="optional">(optional)</span></span>
+        <input name="startTime" type="time">
+      </label>
+
+      <fieldset class="field">
+        <legend class="field-label">As-needed medication taken for it</legend>
+        <div id="link-choices" class="chips stacked"></div>
+        <p id="link-hint" class="help-text small"></p>
+      </fieldset>
+
+      <fieldset id="helped-field" class="field">
+        <legend class="field-label">Did the treatment help?</legend>
+        <div id="helped-choices" class="chips"></div>
+      </fieldset>
+
+      <label class="field">
+        <span class="field-label">Notes <span class="optional">(optional)</span></span>
+        <input name="notes" type="text" maxlength="300" autocomplete="off" placeholder="e.g. triggered by lack of sleep">
+      </label>
+
+      <p class="message error form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="submit" class="button primary">Save</button>
+      </div>
+      <button id="remove-migraine-button" type="button" class="link-button danger">Remove this episode</button>
+    </form>
+  </dialog>
+
+  <!-- FORM: log / edit an as-needed (PRN) medication intake -->
+  <dialog id="intake-dialog" class="sheet">
+    <form id="intake-form" novalidate>
+      <h2 id="intake-dialog-title">Log as-needed medication</h2>
+      <p id="intake-dialog-date" class="help-text"></p>
+
+      <fieldset class="field">
+        <legend class="field-label">Medication</legend>
+        <div id="intake-med-choices" class="chips stacked"></div>
+        <input name="otherName" type="text" maxlength="60" autocomplete="off" placeholder="Medication name" aria-label="Other medication name" class="other-name" hidden>
+      </fieldset>
+
+      <label class="field">
+        <span class="field-label">Dose taken <span class="optional">(optional)</span></span>
+        <input name="dose" type="text" maxlength="40" autocomplete="off" placeholder="e.g. 50 mg">
+      </label>
+
+      <label class="field">
+        <span class="field-label">Time taken <span class="optional">(optional)</span></span>
+        <input name="time" type="time">
+      </label>
+
+      <fieldset id="intake-episode-field" class="field">
+        <legend class="field-label">Taken for a migraine episode?</legend>
+        <div id="intake-episode-choices" class="chips stacked"></div>
+      </fieldset>
+
+      <label class="field">
+        <span class="field-label">Notes <span class="optional">(optional)</span></span>
+        <input name="notes" type="text" maxlength="200" autocomplete="off" placeholder="e.g. second dose">
+      </label>
+
+      <p class="message error form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" class="button" data-close>Cancel</button>
+        <button type="submit" class="button primary">Save</button>
+      </div>
+      <button id="remove-intake-button" type="button" class="link-button danger">Remove this intake</button>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
